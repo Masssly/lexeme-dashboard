@@ -6,8 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
-:root{--bg:#faf9f6;--panel:#fff;--text:#26251f;--sub:#6b6a62;--border:#e4e2d8}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:32px 20px 60px}.wrap{max-width:980px;margin:0 auto}h1{font-size:1.5rem;font-weight:600;margin:0 0 4px}.kr{color:var(--sub);font-size:.92rem;line-height:1.5;margin:0 0 28px;max-width:760px}.kr code{background:#f0efe6;padding:1px 5px;border-radius:3px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 24px 12px;margin-bottom:24px}.panel h2{font-size:1.05rem;font-weight:600;margin:0 0 2px}.panel .meta{color:var(--sub);font-size:.85rem;margin-bottom:12px}.stat-row{display:flex;gap:24px;flex-wrap:wrap;margin:4px 0 16px}.stat{font-size:.85rem;color:var(--sub)}.stat b{color:var(--text);font-size:1.1rem;display:block}canvas{max-height:360px}#generated{color:var(--sub);font-size:.8rem;text-align:right;margin-top:8px}.lang-toggles{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.85rem}.lang-toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}.notice{padding:10px 14px;border-radius:6px;font-size:.85rem;margin-bottom:16px}.error{background:#fdf3e7;border:1px solid #e8c98a;color:#7a5a1e}
+:root{--bg:#faf9f6;--panel:#fff;--text:#26251f;--sub:#6b6a62;--border:#e4e2d8}*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:32px 20px 60px}.wrap{max-width:980px;margin:0 auto}h1{font-size:1.5rem;font-weight:600;margin:0 0 4px}.kr{color:var(--sub);font-size:.92rem;line-height:1.5;margin:0 0 28px;max-width:760px}.kr code{background:#f0efe6;padding:1px 5px;border-radius:3px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 24px 12px;margin-bottom:24px}.panel h2{font-size:1.05rem;font-weight:600;margin:0 0 2px}.panel .meta{color:var(--sub);font-size:.85rem;margin-bottom:12px}.stat-row{display:flex;gap:24px;flex-wrap:wrap;margin:4px 0 16px}.stat{font-size:.85rem;color:var(--sub)}.stat b{color:var(--text);font-size:1.1rem;display:block}canvas{max-height:360px}#generated{color:var(--sub);font-size:.8rem;text-align:right;margin-top:8px}.lang-toggles{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.85rem}.lang-toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}.notice{padding:10px 14px;border-radius:6px;font-size:.85rem;margin-bottom:16px}.error{background:#fdf3e7;border:1px solid #e8c98a;color:#7a5a1e}
 </style>
 </head>
 <body>
@@ -20,8 +19,8 @@
 <div id="generated"></div>
 </div>
 <script>
-// Google Sheets document ID from the edit URL supplied by the user.
-const SHEET_CSV_URL="https://docs.google.com/spreadsheets/d/1s2NLl8oxc4RJYbQzvMmP11wD8Pe9haCa4YYmPdK5K9A/gviz/tq?tqx=out:csv&gid=0";
+// Google Sheets document ID. Use the sheet tab by name so this continues to work even if its gid changes.
+const SHEET_CSV_URL="https://docs.google.com/spreadsheets/d/1s2NLl8oxc4RJYbQzvMmP11wD8Pe9haCa4YYmPdK5K9A/gviz/tq?tqx=out:csv&sheet=dashboard";
 const LANG_COLUMNS={"Dagbanli":"dagbanli","Malayalam":"malayalam","Igbo":"igbo","Central Bikol":"central_bikol"};
 const LANG_QIDS={"Dagbanli":"Q32238","Malayalam":"Q36236","Igbo":"Q33578","Central Bikol":"Q33284"};
 const COLORS={"Dagbanli":"#c0392b","Malayalam":"#378ADD","Igbo":"#2e9e6d","Central Bikol":"#e0a12b"};
