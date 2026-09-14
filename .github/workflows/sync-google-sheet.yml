@@ -1,11 +1,10 @@
 name: Sync dashboard data from Google Sheet
 
 on:
+  # Refresh four times a day so spreadsheet changes reach the dashboard automatically.
   schedule:
-    - cron: '15 4 * * *'
+    - cron: '15 0,6,12,18 * * *'
   workflow_dispatch: {}
-  push:
-    branches: [main]
 
 permissions:
   contents: write
