@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sync Lexeme Dashboard</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#202122;--muted:#72777d;--line:#eaecf0;--blue:#36c;--blue-soft:#eaf3ff;--shadow:0 12px 34px rgba(32,33,34,.08)}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 0,#fff 0,#f6f7f9 48%),var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text)}.card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:34px;box-shadow:var(--shadow)}.eyebrow{color:var(--blue);font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}.eyebrow:before{content:"↻ ";font-size:1rem}h1{margin:0 0 10px;font-size:2rem;letter-spacing:-.03em}p{color:var(--muted);line-height:1.55;margin:0 0 22px}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 18px;border:0;border-radius:11px;background:var(--blue);color:#fff;text-decoration:none;font-weight:700;font-size:.95rem;cursor:pointer;box-shadow:0 4px 12px rgba(51,102,204,.22)}.button:hover{filter:brightness(.96)}.note{margin-top:16px;padding:12px 14px;border-radius:11px;background:var(--blue-soft);font-size:.8rem;color:#54595d;line-height:1.5}.note strong{color:var(--text)}.back{display:inline-block;margin-top:18px;color:var(--blue);font-size:.82rem;text-decoration:none}.back:hover{text-decoration:underline}</style>
+</head>
+<body>
+<main class="card">
+  <div class="eyebrow">Lexeme Dashboard</div>
+  <h1>Sync the latest data</h1>
+  <p>Run the dashboard's Google Sheet sync now. GitHub will authenticate you before allowing the workflow to run.</p>
+  <a class="button" href="https://github.com/Masssly/lexeme-dashboard/actions/workflows/sync-google-sheet.yml" target="_blank" rel="noopener">Open authenticated sync →</a>
+  <div class="note"><strong>What happens next?</strong><br>GitHub fetches the latest spreadsheet data, updates <code>data/dashboard.csv</code> if needed, and the Pages deployment publishes the change automatically.</div>
+  <a class="back" href="./">← Back to dashboard</a>
+</main>
+</body>
+</html>
