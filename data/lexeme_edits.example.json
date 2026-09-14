@@ -1,0 +1,75 @@
+{
+  "generated": "2026-09-14T00:00:00Z",
+  "overall": {
+    "target": 80000,
+    "baseline": { "start": "2026-01", "end": "2026-03", "average": 66670 },
+    "months": [
+      { "month": "2026-01", "edits": 63120 },
+      { "month": "2026-02", "edits": 68450 },
+      { "month": "2026-03", "edits": 68440 },
+      { "month": "2026-04", "edits": 71200 },
+      { "month": "2026-05", "edits": 74300 },
+      { "month": "2026-06", "edits": 76800 },
+      { "month": "2026-07", "edits": 79100 },
+      { "month": "2026-08", "edits": 81450 }
+    ]
+  },
+  "languages": {
+    "Dagbanli": {
+      "qid": "Q32238",
+      "lexeme_count": 14231,
+      "months": [
+        { "month": "2026-01", "edits": 210 },
+        { "month": "2026-02", "edits": 340 },
+        { "month": "2026-03", "edits": 505 },
+        { "month": "2026-04", "edits": 620 },
+        { "month": "2026-05", "edits": 780 },
+        { "month": "2026-06", "edits": 910 },
+        { "month": "2026-07", "edits": 1040 },
+        { "month": "2026-08", "edits": 1180 }
+      ]
+    },
+    "Malayalam": {
+      "qid": "Q36236",
+      "lexeme_count": 68000,
+      "months": [
+        { "month": "2026-01", "edits": 1800 },
+        { "month": "2026-02", "edits": 1950 },
+        { "month": "2026-03", "edits": 2100 },
+        { "month": "2026-04", "edits": 2050 },
+        { "month": "2026-05", "edits": 2200 },
+        { "month": "2026-06", "edits": 2400 },
+        { "month": "2026-07", "edits": 2350 },
+        { "month": "2026-08", "edits": 2500 }
+      ]
+    },
+    "Igbo": {
+      "qid": "Q33578",
+      "lexeme_count": 5709,
+      "months": [
+        { "month": "2026-01", "edits": 90 },
+        { "month": "2026-02", "edits": 120 },
+        { "month": "2026-03", "edits": 140 },
+        { "month": "2026-04", "edits": 160 },
+        { "month": "2026-05", "edits": 210 },
+        { "month": "2026-06", "edits": 260 },
+        { "month": "2026-07", "edits": 300 },
+        { "month": "2026-08", "edits": 340 }
+      ]
+    },
+    "Central Bikol": {
+      "qid": "Q33284",
+      "lexeme_count": 1264,
+      "months": [
+        { "month": "2026-01", "edits": 20 },
+        { "month": "2026-02", "edits": 25 },
+        { "month": "2026-03", "edits": 30 },
+        { "month": "2026-04", "edits": 35 },
+        { "month": "2026-05", "edits": 40 },
+        { "month": "2026-06", "edits": 55 },
+        { "month": "2026-07", "edits": 60 },
+        { "month": "2026-08", "edits": 70 }
+      ]
+    }
+  }
+}
