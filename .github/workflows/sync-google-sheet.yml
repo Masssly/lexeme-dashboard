@@ -1,0 +1,33 @@
+name: Sync dashboard data from Google Sheet
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch dashboard sheet
+        run: |
+          mkdir -p data
+          curl --fail --location --silent --show-error \
+            'https://docs.google.com/spreadsheets/d/1s2NLl8oxc4RJYbQzvMmP11wD8Pe9haCa4YYmPdK5K9A/gviz/tq?tqx=out:csv&sheet=dashboard' \
+            -o data/dashboard.csv
+          test -s data/dashboard.csv
+          head -n 3 data/dashboard.csv
+
+      - name: Commit updated data
+        run: |
+          git config user.name 'lexeme-stats-bot'
+          git config user.email 'lexeme-stats-bot@users.noreply.github.com'
+          git add data/dashboard.csv
+          git diff --cached --quiet || git commit -m 'Sync dashboard data from Google Sheet'
+          git push
