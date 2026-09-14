@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wikidata Lexeme Edit Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#faf9f6; --panel:#fff; --text:#26251f; --sub:#6b6a62;
+    --border:#e4e2d8; --accent:#c0392b; --grid:#eeece2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); padding:32px 20px 60px;
+  }
+  .wrap{max-width:980px; margin:0 auto}
+  h1{font-size:1.5rem; font-weight:600; margin:0 0 4px}
+  .kr{color:var(--sub); font-size:0.92rem; line-height:1.5; margin:0 0 28px; max-width:760px}
+  .kr code{background:#f0efe6; padding:1px 5px; border-radius:3px}
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:20px 24px 12px; margin-bottom:24px;
+  }
+  .panel h2{font-size:1.05rem; font-weight:600; margin:0 0 2px}
+  .panel .meta{color:var(--sub); font-size:0.85rem; margin-bottom:12px}
+  .stat-row{display:flex; gap:24px; flex-wrap:wrap; margin:4px 0 16px}
+  .stat{font-size:0.85rem; color:var(--sub)}
+  .stat b{color:var(--text); font-size:1.1rem; display:block}
+  canvas{max-height:360px}
+  #generated{color:var(--sub); font-size:0.8rem; text-align:right; margin-top:8px}
+  .lang-toggles{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; font-size:0.85rem}
+  .lang-toggles label{display:flex; align-items:center; gap:5px; cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wikidata Lexeme Edit Dashboard</h1>
+  <p class="kr">KR: The average number of monthly edits on Lexemes reaches <code>80,000</code> across Q3
+  and Q4 (Baseline Jan–Mar 2026: <code>66,670</code>). As priority languages for Abstract Wikipedia are
+  identified, effort is progressively focused on these languages.</p>
+
+  <div class="panel">
+    <h2>Overall monthly Lexeme edits</h2>
+    <div class="meta">All edits in the Lexeme namespace, Wikidata-wide</div>
+    <div class="stat-row">
+      <div class="stat"><b id="statLatest">—</b>Latest month</div>
+      <div class="stat"><b id="statAvgQ3Q4">—</b>Avg. since Jul 2026</div>
+      <div class="stat"><b>66,670</b>Baseline (Jan–Mar 2026)</div>
+      <div class="stat"><b>80,000</b>Target</div>
+    </div>
+    <canvas id="overallChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Priority languages</h2>
+    <div class="meta">Monthly Lexeme edits, Abstract Wikipedia priority languages</div>
+    <div class="lang-toggles" id="langToggles"></div>
+    <canvas id="langChart"></canvas>
+  </div>
+
+  <div id="generated"></div>
+</div>
+
+<script>
+/* ============================================================
+   EDIT THIS BLOCK to update the dashboard. No build step, no
+   fetch, no JSON file — just replace the numbers and refresh.
+   Get "overall" numbers from queries/overall_lexeme_edits.sql
+   in Quarry; get per-language numbers from the generated
+   per-language SQL (see queries/generated/ in the repo, or
+   scripts/get_lexeme_ids.py to regenerate them).
+   ============================================================ */
+const DATA = {
+  generated: "2026-09-14T00:00:00Z",   // <- update this whenever you refresh numbers
+  overall: {
+    target: 80000,
+    baseline: { start: "2026-01", end: "2026-03", average: 66670 },
+    months: [
+      // { month: "2026-01", edits: 00000 },
+      { month: "2026-01", edits: 63120 },
+      { month: "2026-02", edits: 68450 },
+      { month: "2026-03", edits: 68440 },
+    ]
+  },
+  languages: {
+    "Dagbanli":      { qid: "Q32238", months: [
+      { month: "2026-01", edits: 210 },
+      { month: "2026-02", edits: 340 },
+      { month: "2026-03", edits: 505 },
+    ]},
+    "Malayalam":     { qid: "Q36236", months: [
+      { month: "2026-01", edits: 1800 },
+      { month: "2026-02", edits: 1950 },
+      { month: "2026-03", edits: 2100 },
+    ]},
+    "Igbo":          { qid: "Q33578", months: [
+      { month: "2026-01", edits: 90 },
+      { month: "2026-02", edits: 120 },
+      { month: "2026-03", edits: 140 },
+    ]},
+    "Central Bikol": { qid: "Q33284", months: [
+      { month: "2026-01", edits: 20 },
+      { month: "2026-02", edits: 25 },
+      { month: "2026-03", edits: 30 },
+    ]},
+  }
+};
+/* ============================================================ */
+
+const COLORS = {
+  "Dagbanli": "#c0392b",
+  "Malayalam": "#378ADD",
+  "Igbo": "#2e9e6d",
+  "Central Bikol": "#e0a12b"
+};
+
+render(DATA);
+
+function render(data) {
+  document.getElementById('generated').textContent =
+    'Data updated: ' + new Date(data.generated).toLocaleDateString();
+
+  // ---- Overall chart ----
+  const months = data.overall.months.map(m => m.month);
+  const edits = data.overall.months.map(m => m.edits);
+  const target = data.overall.target;
+
+  const last = data.overall.months[data.overall.months.length - 1];
+  document.getElementById('statLatest').textContent = last ? last.edits.toLocaleString() : '—';
+
+  const q3q4 = data.overall.months.filter(m => m.month >= '2026-07');
+  document.getElementById('statAvgQ3Q4').textContent = q3q4.length
+    ? Math.round(q3q4.reduce((s, m) => s + m.edits, 0) / q3q4.length).toLocaleString()
+    : '—';
+
+  new Chart(document.getElementById('overallChart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Monthly edits',
+          data: edits,
+          backgroundColor: months.map(m =>
+            m >= data.overall.baseline.start && m <= data.overall.baseline.end
+              ? '#d8d5c7' : '#378ADD'),
+          borderRadius: 3,
+          order: 2
+        },
+        {
+          label: 'Target (80,000)',
+          data: months.map(() => target),
+          type: 'line',
+          borderColor: '#c0392b',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#eeece2' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ---- Per-language chart ----
+  const langNames = Object.keys(data.languages);
+  const toggleDiv = document.getElementById('langToggles');
+  langNames.forEach(name => {
+    const id = 'tog_' + name.replace(/\s+/g, '_');
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" id="${id}" checked>
+      <span style="color:${COLORS[name] || '#888'}">●</span> ${name}`;
+    toggleDiv.appendChild(label);
+  });
+
+  const allMonths = [...new Set(
+    langNames.flatMap(n => data.languages[n].months.map(m => m.month))
+  )].sort();
+
+  const datasets = langNames.map(name => {
+    const byMonth = Object.fromEntries(data.languages[name].months.map(m => [m.month, m.edits]));
+    return {
+      label: name,
+      data: allMonths.map(m => byMonth[m] ?? null),
+      borderColor: COLORS[name] || '#888',
+      backgroundColor: COLORS[name] || '#888',
+      spanGaps: true,
+      tension: 0.25,
+    };
+  });
+
+  const langChart = new Chart(document.getElementById('langChart'), {
+    type: 'line',
+    data: { labels: allMonths, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#eeece2' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  langNames.forEach((name, i) => {
+    document.getElementById('tog_' + name.replace(/\s+/g, '_')).addEventListener('change', e => {
+      langChart.setDatasetVisibility(i, e.target.checked);
+      langChart.update();
+    });
+  });
+}
+</script>
+</body>
+</html>
