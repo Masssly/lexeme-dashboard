@@ -65,23 +65,42 @@
 
 <script>
 /* ============================================================
-   EDIT THIS BLOCK to update the dashboard. No build step, no
-   fetch, no JSON file — just replace the numbers and refresh.
-   Get "overall" numbers from queries/overall_lexeme_edits.sql
-   in Quarry; get per-language numbers from the generated
-   per-language SQL (see queries/generated/ in the repo, or
-   scripts/get_lexeme_ids.py to regenerate them).
+   GOOGLE SHEET DATA SOURCE (recommended — no more file editing)
+   ------------------------------------------------------------
+   1. Make a Google Sheet with these exact column headers in row 1:
+        month | overall_edits | dagbanli | malayalam | igbo | central_bikol
+      Then one row per month, e.g.:
+        2026-01 | 63120 | 210 | 1800 | 90 | 20
+      Format column A as Plain Text first (Format > Number > Plain
+      text), or type a leading apostrophe ('2026-01), so Sheets
+      doesn't silently convert it to a date.
+   2. File > Share > Publish to web > pick that sheet/tab > format
+      "Comma-separated values (.csv)" > Publish. Copy the URL it
+      gives you (looks like .../pub?gid=0&single=true&output=csv).
+   3. Paste that URL below. Commit this ONE change. After that,
+      just edit the Sheet — the page re-fetches it on every load.
+   If SHEET_CSV_URL is left empty, the hardcoded FALLBACK_DATA below
+   is used instead (handy for testing without a sheet set up yet).
    ============================================================ */
-const DATA = {
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJXVwhNmCvbr7KNazhcRrjeB4PFbKa8E-xRhp3SonCNliOFvPx2lg_Zm28V-Y9NVZXSbbUI6IXvKu0/pub?gid=0&single=true&output=csv"; // e.g. "https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?output=csv"
+
+const FALLBACK_DATA = {
   generated: "2026-09-14T00:00:00Z",   // <- update this whenever you refresh numbers
+  // PLACEHOLDER DATA — every number below is made up, just to check the
+  // charts render sensibly. Replace with real Quarry output when ready;
+  // the shape (array of {month, edits}) is all that matters.
   overall: {
     target: 80000,
     baseline: { start: "2026-01", end: "2026-03", average: 66670 },
     months: [
-      // { month: "2026-01", edits: 00000 },
       { month: "2026-01", edits: 63120 },
       { month: "2026-02", edits: 68450 },
       { month: "2026-03", edits: 68440 },
+      { month: "2026-04", edits: 71200 },
+      { month: "2026-05", edits: 74300 },
+      { month: "2026-06", edits: 76800 },
+      { month: "2026-07", edits: 79100 },
+      { month: "2026-08", edits: 81450 },
     ]
   },
   languages: {
@@ -89,21 +108,41 @@ const DATA = {
       { month: "2026-01", edits: 210 },
       { month: "2026-02", edits: 340 },
       { month: "2026-03", edits: 505 },
+      { month: "2026-04", edits: 620 },
+      { month: "2026-05", edits: 780 },
+      { month: "2026-06", edits: 910 },
+      { month: "2026-07", edits: 1040 },
+      { month: "2026-08", edits: 1180 },
     ]},
     "Malayalam":     { qid: "Q36236", months: [
       { month: "2026-01", edits: 1800 },
       { month: "2026-02", edits: 1950 },
       { month: "2026-03", edits: 2100 },
+      { month: "2026-04", edits: 2050 },
+      { month: "2026-05", edits: 2200 },
+      { month: "2026-06", edits: 2400 },
+      { month: "2026-07", edits: 2350 },
+      { month: "2026-08", edits: 2500 },
     ]},
     "Igbo":          { qid: "Q33578", months: [
       { month: "2026-01", edits: 90 },
       { month: "2026-02", edits: 120 },
       { month: "2026-03", edits: 140 },
+      { month: "2026-04", edits: 160 },
+      { month: "2026-05", edits: 210 },
+      { month: "2026-06", edits: 260 },
+      { month: "2026-07", edits: 300 },
+      { month: "2026-08", edits: 340 },
     ]},
     "Central Bikol": { qid: "Q33284", months: [
       { month: "2026-01", edits: 20 },
       { month: "2026-02", edits: 25 },
       { month: "2026-03", edits: 30 },
+      { month: "2026-04", edits: 35 },
+      { month: "2026-05", edits: 40 },
+      { month: "2026-06", edits: 55 },
+      { month: "2026-07", edits: 60 },
+      { month: "2026-08", edits: 70 },
     ]},
   }
 };
@@ -116,7 +155,74 @@ const COLORS = {
   "Central Bikol": "#e0a12b"
 };
 
-render(DATA);
+const LANG_COLUMNS = {
+  "Dagbanli": "dagbanli",
+  "Malayalam": "malayalam",
+  "Igbo": "igbo",
+  "Central Bikol": "central_bikol",
+};
+const LANG_QIDS = {
+  "Dagbanli": "Q32238", "Malayalam": "Q36236", "Igbo": "Q33578", "Central Bikol": "Q33284",
+};
+
+loadData();
+
+async function loadData() {
+  if (!SHEET_CSV_URL) {
+    render(FALLBACK_DATA);
+    return;
+  }
+  try {
+    const res = await fetch(SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now());
+    if (!res.ok) throw new Error('fetch failed: ' + res.status);
+    const csvText = await res.text();
+    render(parseSheetCsv(csvText));
+  } catch (err) {
+    console.warn('Could not load Google Sheet, falling back to placeholder data:', err);
+    const note = document.createElement('div');
+    note.style.cssText = 'background:#fdf3e7;border:1px solid #e8c98a;color:#7a5a1e;' +
+      'padding:8px 14px;border-radius:6px;font-size:0.85rem;margin-bottom:16px';
+    note.textContent = "Couldn't load the Google Sheet — showing placeholder data instead. " +
+      "Check that SHEET_CSV_URL is set and the sheet is published to the web.";
+    document.querySelector('.wrap').insertBefore(note, document.querySelector('.panel'));
+    render(FALLBACK_DATA);
+  }
+}
+
+function parseSheetCsv(csvText) {
+  const lines = csvText.trim().split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+  const header = lines[0].map(h => h.toLowerCase());
+  const rows = lines.slice(1).filter(r => r[0]);
+
+  const idx = name => header.indexOf(name);
+  const monthIdx = idx('month');
+  const overallIdx = idx('overall_edits');
+
+  const overallMonths = rows
+    .map(r => ({ month: r[monthIdx], edits: Number(r[overallIdx]) }))
+    .filter(m => m.month && !Number.isNaN(m.edits));
+
+  const languages = {};
+  for (const [name, col] of Object.entries(LANG_COLUMNS)) {
+    const colIdx = idx(col);
+    languages[name] = {
+      qid: LANG_QIDS[name],
+      months: colIdx === -1 ? [] : rows
+        .map(r => ({ month: r[monthIdx], edits: Number(r[colIdx]) }))
+        .filter(m => m.month && !Number.isNaN(m.edits))
+    };
+  }
+
+  return {
+    generated: new Date().toISOString(),
+    overall: {
+      target: FALLBACK_DATA.overall.target,
+      baseline: FALLBACK_DATA.overall.baseline,
+      months: overallMonths
+    },
+    languages
+  };
+}
 
 function render(data) {
   document.getElementById('generated').textContent =
