@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Wikidata Lexeme Edit Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
 :root{--bg:#faf9f6;--panel:#fff;--text:#26251f;--sub:#6b6a62;--border:#e4e2d8}*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:32px 20px 60px}.wrap{max-width:980px;margin:0 auto}h1{font-size:1.5rem;font-weight:600;margin:0 0 4px}.kr{color:var(--sub);font-size:.92rem;line-height:1.5;margin:0 0 28px;max-width:760px}.kr code{background:#f0efe6;padding:1px 5px;border-radius:3px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px 24px 12px;margin-bottom:24px}.panel h2{font-size:1.05rem;font-weight:600;margin:0 0 2px}.panel .meta{color:var(--sub);font-size:.85rem;margin-bottom:12px}.stat-row{display:flex;gap:24px;flex-wrap:wrap;margin:4px 0 16px}.stat{font-size:.85rem;color:var(--sub)}.stat b{color:var(--text);font-size:1.1rem;display:block}canvas{max-height:360px}#generated{color:var(--sub);font-size:.8rem;text-align:right;margin-top:8px}.lang-toggles{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.85rem}.lang-toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}.notice{padding:10px 14px;border-radius:6px;font-size:.85rem;margin-bottom:16px}.error{background:#fdf3e7;border:1px solid #e8c98a;color:#7a5a1e}.error details{margin-top:8px}.error code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word}
 </style>
@@ -20,27 +19,56 @@
 </div>
 <script>
 const DATA_URL="./data/dashboard.csv";
+const CHART_SOURCES=[
+  "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js",
+  "https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+];
 const LANG_COLUMNS={"Dagbanli":"dagbanli","Malayalam":"malayalam","Igbo":"igbo","Central Bikol":"central_bikol"};
 const LANG_QIDS={"Dagbanli":"Q32238","Malayalam":"Q36236","Igbo":"Q33578","Central Bikol":"Q33284"};
 const COLORS={"Dagbanli":"#c0392b","Malayalam":"#378ADD","Igbo":"#2e9e6d","Central Bikol":"#e0a12b"};
 const TARGET=80000,BASELINE={start:"2026-01",end:"2026-03",average:66670};
-loadData();
+loadDashboard();
+
+async function loadDashboard(){
+  try{await loadChartJs();}
+  catch(e){showError("Could not load the chart library.",e.message||String(e),"Chart.js");return;}
+  try{const data=await loadData();render(data);}
+  catch(e){console.error("Could not load dashboard data",e);showError("Could not load dashboard data.",e.message||String(e),"CSV/data");}
+}
+
+function loadChartJs(){
+  if(window.Chart)return Promise.resolve(window.Chart);
+  return new Promise((resolve,reject)=>{
+    let index=0;
+    const tryNext=()=>{
+      if(window.Chart)return resolve(window.Chart);
+      if(index>=CHART_SOURCES.length){reject(new Error("Chart.js could not be loaded from the available CDNs. Check your network connection or content-blocking extensions."));return;}
+      const src=CHART_SOURCES[index++],script=document.createElement("script");
+      script.src=src;script.async=true;
+      script.onload=()=>window.Chart?resolve(window.Chart):tryNext();
+      script.onerror=tryNext;
+      document.head.appendChild(script);
+    };
+    tryNext();
+  });
+}
+
 async function loadData(){
   const url=DATA_URL+"?v="+Date.now();
-  try{
-    const res=await fetch(url,{cache:'no-store'});
-    if(!res.ok) throw new Error(`HTTP ${res.status} while fetching ${DATA_URL}`);
-    const text=await res.text();
-    if(!text.trim()) throw new Error('The CSV response was empty');
-    const data=parseCsv(text);
-    if(!data.overall.months.length) throw new Error('The CSV contains no valid data rows');
-    render(data);
-  }catch(e){
-    console.error('Could not load dashboard data',e);
-    const msg=e instanceof Error?e.message:String(e);
-    document.getElementById('notice').innerHTML=`<div class="notice error"><strong>Could not load dashboard data.</strong><br>${escapeHtml(msg)}<details><summary>Technical details</summary><div>Requested: <code>${escapeHtml(url)}</code><br>Page: <code>${escapeHtml(location.href)}</code></div></details></div>`;
-  }
+  const res=await fetch(url,{cache:"no-store"});
+  if(!res.ok)throw new Error(`HTTP ${res.status} while fetching ${DATA_URL}`);
+  const text=await res.text();
+  if(!text.trim())throw new Error("The CSV response was empty");
+  const data=parseCsv(text);
+  if(!data.overall.months.length)throw new Error("The CSV contains no valid data rows");
+  return data;
 }
+
+function showError(title,message,category){
+  console.error(title,message);
+  document.getElementById("notice").innerHTML=`<div class="notice error"><strong>${escapeHtml(title)}</strong><br>${escapeHtml(message)}<details><summary>Technical details</summary><div>Component: <code>${escapeHtml(category)}</code><br>Page: <code>${escapeHtml(location.href)}</code></div></details></div>`;
+}
+
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function parseCsv(text){const rows=csvRows(text);if(!rows.length)throw new Error('CSV has no rows');const header=rows[0].map(x=>x.trim().toLowerCase());const idx=n=>header.indexOf(n);const mi=idx('month'),oi=idx('overall_edits');if(mi<0||oi<0)throw new Error(`Missing required columns. Found: ${header.join(', ')}`);const dataRows=rows.slice(1).filter(r=>r[mi]);const overall=dataRows.map(r=>({month:normaliseMonth(r[mi]),edits:Number(String(r[oi]).replace(/,/g,''))})).filter(x=>x.month&&!Number.isNaN(x.edits));const languages={};for(const [name,col] of Object.entries(LANG_COLUMNS)){const ci=idx(col);languages[name]={qid:LANG_QIDS[name],months:ci<0?[]:dataRows.map(r=>({month:normaliseMonth(r[mi]),edits:Number(String(r[ci]).replace(/,/g,''))})).filter(x=>x.month&&!Number.isNaN(x.edits))}}return{overall:{target:TARGET,baseline:BASELINE,months:overall},languages}}
 function csvRows(text){const rows=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(quoted){if(c==='"'&&n==='"'){field+='"';i++}else if(c==='"')quoted=false;else field+=c}else{if(c==='"')quoted=true;else if(c===','){row.push(field);field=''}else if(c==='\n'){row.push(field);rows.push(row);row=[];field=''}else if(c!=='\r')field+=c}}row.push(field);if(row.some(x=>x!==''))rows.push(row);return rows}
