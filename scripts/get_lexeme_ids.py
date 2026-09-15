@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Standalone data-preparation helper: fetches Wikidata language Lexeme IDs and
+# generates Quarry SQL under queries/generated/. Its JSON output is not read by
+# the live dashboard; monthly numbers are entered manually into the Google Sheet.
 """
 Fetch the list of Lexeme IDs (L-ids) for each target language from the
 public Wikidata Query Service, cache them under data/lexeme_ids/, and
