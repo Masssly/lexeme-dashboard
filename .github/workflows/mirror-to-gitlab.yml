@@ -1,0 +1,53 @@
+name: Mirror production site to GitLab
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'data/dashboard.csv'
+      - '.github/workflows/mirror-to-gitlab.yml'
+  workflow_dispatch: {}
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub source
+        uses: actions/checkout@v4
+
+      - name: Prepare lean production mirror
+        run: |
+          rm -rf gitlab-mirror
+          mkdir -p gitlab-mirror/data
+          cp index.html gitlab-mirror/index.html
+          cp data/dashboard.csv gitlab-mirror/data/dashboard.csv
+          cat > gitlab-mirror/.gitlab-ci.yml <<'EOF'
+          create-pages:
+            script:
+              - mkdir -p public
+              - cp index.html public/index.html
+              - mkdir -p public/data
+              - cp data/dashboard.csv public/data/dashboard.csv
+            pages: true
+            rules:
+              - if: '$CI_COMMIT_BRANCH == "main"'
+          EOF
+
+      - name: Push lean mirror to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          GITLAB_REPO: ${{ secrets.GITLAB_REPO }}
+        run: |
+          test -n "$GITLAB_TOKEN" || { echo "Missing GITLAB_TOKEN secret"; exit 1; }
+          test -n "$GITLAB_REPO" || { echo "Missing GITLAB_REPO secret"; exit 1; }
+
+          cd gitlab-mirror
+          git init
+          git config user.name 'lexeme-dashboard-mirror'
+          git config user.email 'lexeme-dashboard-mirror@users.noreply.github.com'
+          git add index.html data/dashboard.csv .gitlab-ci.yml
+          git commit -m 'Deploy production site from GitHub'
+          git branch -M main
+          git remote add origin "https://oauth2:${GITLAB_TOKEN}@gitlab.com/${GITLAB_REPO}.git"
+          git push --force origin main
