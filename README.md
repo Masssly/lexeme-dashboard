@@ -2,7 +2,7 @@
 
 A lightweight GitHub Pages dashboard for tracking the Wikidata Lexeme-editing KR:
 
-> The average number of monthly edits on Lexemes reaches 80,000 across Q3 and Q4 (baseline January–March 2026: 66,670). As priority languages for Abstract Wikipedia are identified, efforts are progressively focused on these languages.
+> The average number of monthly edits on Lexemes reaches 80,000 across Q3 and Q4 (baseline January-March 2026: 66,670). As priority languages for Abstract Wikipedia are identified, efforts are progressively focused on these languages.
 
 The live dashboard shows overall monthly Lexeme edits and a per-language view for four priority languages:
 
@@ -50,6 +50,14 @@ The sync workflow then:
 4. Lets `pages.yml` deploy the updated dashboard automatically.
 
 No Google Sheet credentials are stored in the repository.
+
+## Dashboard projection
+
+The overall chart has an optional **Show Q4 projection** toggle. The projection extends the chart from the latest available actual month through December 2026.
+
+The current projection is deliberately simple: it fits a linear trend to the available July-September 2026 actuals and uses that trend to estimate the remaining Q4 months. The projected October, November and December values are also shown below the chart, together with the projected Q4 average.
+
+This is an indicator for planning and discussion, not a statistical forecast or a change to the KR. The projection uses only data already present in `data/dashboard.csv` and does not alter the source data.
 
 ## Getting real numbers into the Sheet
 
