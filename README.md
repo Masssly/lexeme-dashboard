@@ -1,84 +1,100 @@
 # Wikidata Lexeme Edit Dashboard
 
-Tracks the KR: *"The average number of monthly edits on Lexemes reaches
-80,000 across Q3 and Q4 (Baseline January–March 2026: 66,670). As priority
-languages for Abstract Wikipedia are identified, efforts are progressively
-focused on these languages."*
+A lightweight GitHub Pages dashboard for tracking the Wikidata Lexeme-editing KR:
 
-Tracks overall Wikidata Lexeme-namespace edits per month, plus a
-per-language breakdown for the four priority languages: **Dagbanli,
-Malayalam, Igbo, Central Bikol**.
+> The average number of monthly edits on Lexemes reaches 80,000 across Q3 and Q4 (baseline January–March 2026: 66,670). As priority languages for Abstract Wikipedia are identified, efforts are progressively focused on these languages.
 
-## Why this isn't a single GitHub Action
+The live dashboard shows overall monthly Lexeme edits and a per-language view for four priority languages:
 
-Lexeme edit history lives in Wikidata's MediaWiki replica database
-(`revision`/`page` tables), which is only reachable from **Wikimedia Cloud
-VPS / Toolforge** — not from GitHub Actions runners, which only have
-regular internet access. Language assignment (which lexeme belongs to
-Dagbanli vs. Malayalam etc.) is separately available via the public
-**Wikidata Query Service** (SPARQL), which *is* reachable from anywhere.
+- Dagbanli
+- Malayalam
+- Igbo
+- Central Bikol
 
-So the pipeline is split:
+## How the live pipeline works
 
-| Step | Where it can run | Script |
-|---|---|---|
-| Get L-id list per language | anywhere (public SPARQL) | `scripts/get_lexeme_ids.py` |
-| Count monthly edits (overall + per-language) | **Toolforge only** (replica DB) | `scripts/toolforge_update_stats.py` |
-| Render dashboard | anywhere (static site) | `site/index.html` |
+The **Google Sheet is the source of truth** for dashboard data. The sheet URL/ID is kept in `.github/workflows/sync-google-sheet.yml` rather than hardcoded here.
 
-## Two ways to keep the data fresh
-
-### Option A — Quick / manual (works today, no new accounts)
-1. Run `queries/overall_lexeme_edits.sql` in [Quarry](https://quarry.wmcloud.org)
-   against the `wikidatawiki` database.
-2. Run `python3 scripts/get_lexeme_ids.py` locally (just needs Python + internet)
-   to generate `queries/generated/*.sql` for each language.
-3. Run each generated file in Quarry too (there may be more than one "chunk"
-   file per language for large ones like Malayalam — sum same-month totals
-   across chunks).
-4. Paste the results into `data/lexeme_edits.json` (see
-   `data/lexeme_edits.example.json` for the exact shape — **that example
-   file has made-up placeholder numbers, just to show the format**).
-5. Commit. The GitHub Actions workflow deploys `site/` to GitHub Pages
-   automatically whenever `data/lexeme_edits.json` changes.
-
-### Option B — Automated (requires a one-time Toolforge account)
-1. Get a Toolforge account: <https://toolsadmin.wikimedia.org/>
-2. `become <your-tool>`, clone this repo there, `pip install --user pymysql`.
-3. Set a GitHub Personal Access Token (repo scope) as `GITHUB_TOKEN` in the
-   job's environment (Toolforge Jobs Framework supports env vars/secrets).
-4. Schedule the job monthly:
-   ```
-   toolforge jobs run update-lexeme-stats \
-     --command "python3 scripts/toolforge_update_stats.py" \
-     --image python3.11 \
-     --schedule "0 3 1 * *"
-   ```
-   This does the full pipeline (SPARQL + replica DB query + writes
-   `data/lexeme_edits.json` + git push) with no manual steps after setup.
-
-Once `data/lexeme_edits.json` lands on `main`, the GitHub Actions workflow
-(`.github/workflows/refresh-and-deploy.yml`) redeploys the site automatically.
-
-## Viewing the dashboard
-
-Enable GitHub Pages (Settings → Pages → source: GitHub Actions) on your
-repo, then visit `https://<you>.github.io/<repo>/site/`. Locally, just open
-`site/index.html` in a browser — it'll fall back to the example data if
-`data/lexeme_edits.json` doesn't exist yet.
-
-## Files
-
+```text
+Google Sheet
+    │
+    │ scheduled sync or manual trigger
+    ▼
+.github/workflows/sync-google-sheet.yml
+    │
+    │ fetches the Sheet's gviz CSV export
+    ▼
+data/dashboard.csv
+    │
+    │ push to main triggers Pages deployment
+    ▼
+.github/workflows/pages.yml
+    │
+    ▼
+GitHub Pages → index.html + data/
 ```
-queries/overall_lexeme_edits.sql       Quarry SQL, overall edits
-queries/per_language_lexeme_edits.README.md   explains the two-step approach
-queries/generated/                     auto-generated per-language SQL (gitignored until run)
-scripts/get_lexeme_ids.py              SPARQL fetch, public, runs anywhere
-scripts/toolforge_update_stats.py      full pipeline, Toolforge only
-data/lexeme_edits.example.json         schema reference (fake numbers)
-data/lexeme_edits.json                 real data (you generate this)
-site/index.html                        the dashboard itself (Chart.js)
-.github/workflows/refresh-and-deploy.yml
+
+### Automatic updates
+
+`sync-google-sheet.yml` runs on a schedule and can also be started manually with GitHub Actions. When the Sheet has changed, the workflow replaces `data/dashboard.csv` and commits the updated file to `main`. That push starts `pages.yml`, which publishes the current dashboard to GitHub Pages.
+
+### Manual updates
+
+Open `sync.html` from the dashboard when you want to start a sync immediately. It provides the authenticated entry point to the `sync-google-sheet.yml` GitHub Actions workflow. GitHub authenticates you before you can dispatch the workflow.
+
+The sync workflow then:
+
+1. Fetches the latest Google Sheet CSV export server-side.
+2. Writes `data/dashboard.csv`.
+3. Commits the file only when the data has changed.
+4. Lets `pages.yml` deploy the updated dashboard automatically.
+
+No Google Sheet credentials are stored in the repository.
+
+## Getting real numbers into the Sheet
+
+The repository also contains standalone helpers for producing the data that is entered into the Google Sheet. **This is a manual data-preparation workflow, not part of the automated GitHub Pages pipeline.**
+
+### 1. Generate language Lexeme ID lists and Quarry SQL
+
+Run:
+
+```bash
+python3 scripts/get_lexeme_ids.py
+```
+
+The script queries the public Wikidata Query Service for Lexeme IDs belonging to each target language and generates ready-to-paste Quarry SQL under `queries/generated/`.
+
+For large language ID lists, the SQL is split into chunks. Run the generated queries in Quarry against `wikidatawiki` and use the resulting monthly counts when updating the Sheet.
+
+### 2. Enter the numbers in the Google Sheet
+
+Copy the relevant monthly overall and per-language counts into the Sheet manually. The Sheet is the source of truth. **Do not edit `data/dashboard.csv` by hand as the normal data-entry method**; the sync workflow regenerates it from the Sheet.
+
+`scripts/toolforge_update_stats.py` is retained as a standalone/legacy helper for fetching language IDs and querying the Wikimedia replica database. Its JSON output belongs to the old data pipeline and is **not consumed by the live dashboard**. It does not populate the Google Sheet automatically.
+
+## CSV schema
+
+The synced file is `data/dashboard.csv`. It must contain these columns:
+
+```text
+month, overall_edits, dagbanli, malayalam, igbo, central_bikol
+```
+
+The underlying Google Sheet uses the same column names. `month` is represented as `YYYY-MM` (for example, `2026-01`), while the edit columns contain numeric monthly counts.
+
+## Dashboard files
+
+```text
+index.html                              Live dashboard
+sync.html                               Human-facing manual sync entry point
+data/dashboard.csv                     Synced dashboard data
+.github/workflows/sync-google-sheet.yml Sheet → CSV sync
+.github/workflows/pages.yml             GitHub Pages deployment
+queries/                                Quarry SQL and generation notes
+queries/generated/                      Generated per-language Quarry SQL
+scripts/get_lexeme_ids.py               WDQS → Lexeme IDs → Quarry SQL helper
+scripts/toolforge_update_stats.py       Standalone/legacy replica-data helper
 ```
 
 ## Language QIDs
@@ -89,3 +105,7 @@ site/index.html                        the dashboard itself (Chart.js)
 | Malayalam | Q36236 |
 | Igbo | Q33578 |
 | Central Bikol | Q33284 |
+
+## Live dashboard
+
+[Open the Lexeme Edit Dashboard](https://masssly.github.io/lexeme-dashboard/)
