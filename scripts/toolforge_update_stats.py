@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Standalone/legacy helper for fetching Wikidata language IDs and querying the
+# Toolforge replica database. Its JSON output is from the old schema and is not
+# consumed by the live dashboard; dashboard numbers are entered manually into
+# the Google Sheet instead.
 """
 Run this on Toolforge (NOT on GitHub Actions — GitHub's runners cannot reach
 the Wikimedia Cloud-VPS-internal replica database; only Toolforge/Cloud VPS
